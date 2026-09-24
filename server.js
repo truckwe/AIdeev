@@ -32,11 +32,11 @@ bot.onText(/^\/start$/, async (msg) => {
     await bot.sendMessage(
         msg.chat.id,
         "🤖 Добро пожаловать в AIdeev2!\n\n" +
-        "🎬 Я умею генерировать видео.\n\n" +
-        "Команда:\n" +
+        "🎬 Генерация видео через Gemini Omni.\n\n" +
+        "Используй:\n" +
         "/omni <описание видео>\n\n" +
         "Пример:\n" +
-        "/omni кот идёт по ночному Токио"
+        "/omni cat is dancing"
     );
 });
 
@@ -48,28 +48,29 @@ bot.onText(/^\/help$/, async (msg) => {
     await bot.sendMessage(
         msg.chat.id,
         "ℹ️ AIdeev2\n\n" +
-        "🎬 Генерация видео через Gemini Omni.\n\n" +
-        "Используй:\n" +
+        "🎬 Генерация видео:\n\n" +
         "/omni <prompt>\n\n" +
         "Пример:\n" +
-        "/omni космонавт летит над Марсом"
+        "/omni cat is dancing"
     );
 });
 
 // =========================
-// OMNI VIDEO
+// OMNI
 // =========================
 
 bot.onText(/^\/omni(?:\s+([\s\S]+))?$/, async (msg, match) => {
     const chatId = msg.chat.id;
-    const prompt = match && match[1] ? match[1].trim() : "";
+    const prompt = match && match[1]
+        ? match[1].trim()
+        : "";
 
     if (!prompt) {
         await bot.sendMessage(
             chatId,
             "❌ Напиши описание видео.\n\n" +
             "Пример:\n" +
-            "/omni кот идёт по ночному Токио"
+            "/omni cat is dancing"
         );
         return;
     }
@@ -82,7 +83,7 @@ bot.onText(/^\/omni(?:\s+([\s\S]+))?$/, async (msg, match) => {
     );
 
     try {
-        console.log("🎬 Генерация:", prompt);
+        console.log("🎬 Prompt:", prompt);
 
         const response = await ai.interactions.create({
             model: "gemini-omni-1.1-flash",
@@ -93,7 +94,10 @@ bot.onText(/^\/omni(?:\s+([\s\S]+))?$/, async (msg, match) => {
             }
         });
 
-        console.log("✅ Ответ Gemini получен");
+        console.log(
+            "✅ Gemini response:",
+            JSON.stringify(response, null, 2)
+        );
 
         let videoData = null;
 
@@ -111,14 +115,10 @@ bot.onText(/^\/omni(?:\s+([\s\S]+))?$/, async (msg, match) => {
         }
 
         if (!videoData) {
-            console.error("❌ Видео не найдено:", response);
-
-            await bot.sendMessage(
-                chatId,
-                "❌ Gemini не вернул видео."
+            throw new Error(
+                "Gemini не вернул видео. Ответ API: " +
+                JSON.stringify(response).slice(0, 3000)
             );
-
-            return;
         }
 
         const buffer = Buffer.from(videoData, "base64");
@@ -127,7 +127,10 @@ bot.onText(/^\/omni(?:\s+([\s\S]+))?$/, async (msg, match) => {
             chatId,
             buffer,
             {
-                caption: "🎬 Готово!\n\n🤖 AIdeev2 • Gemini Omni"
+                caption:
+                    "🎬 Готово!\n\n" +
+                    "🤖 AIdeev2 • Gemini Omni\n" +
+                    "📺 360p"
             },
             {
                 filename: "aideev2.mp4",
@@ -135,21 +138,33 @@ bot.onText(/^\/omni(?:\s+([\s\S]+))?$/, async (msg, match) => {
             }
         );
 
-        console.log("🎥 Видео отправлено");
+        console.log("🎥 Видео отправлено!");
 
     } catch (error) {
-        console.error("❌ Ошибка Gemini:", error);
+        console.error("❌ GEMINI ERROR:", error);
+
+        let errorText = "";
+
+        if (error && error.message) {
+            errorText = error.message;
+        } else {
+            errorText = String(error);
+        }
+
+        if (errorText.length > 3500) {
+            errorText = errorText.slice(0, 3500) + "...";
+        }
 
         await bot.sendMessage(
             chatId,
-            "❌ Не удалось сгенерировать видео.\n\n" +
-            "Проверь API Gemini и попробуй ещё раз."
+            "❌ Ошибка Gemini:\n\n" +
+            errorText
         );
     }
 });
 
 // =========================
-// IGNORE OTHER COMMANDS
+// OTHER MESSAGES
 // =========================
 
 bot.on("message", async (msg) => {
