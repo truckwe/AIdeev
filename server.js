@@ -1,26 +1,18 @@
 const TelegramBot = require("node-telegram-bot-api");
 const { GoogleGenAI } = require("@google/genai");
 
-// =========================
-// ENV
-// =========================
-
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!BOT_TOKEN) {
-    console.error("❌ BOT_TOKEN не найден!");
+    console.error("❌ BOT_TOKEN не найден");
     process.exit(1);
 }
 
 if (!GEMINI_API_KEY) {
-    console.error("❌ GEMINI_API_KEY не найден!");
+    console.error("❌ GEMINI_API_KEY не найден");
     process.exit(1);
 }
-
-// =========================
-// BOT + GEMINI
-// =========================
 
 const bot = new TelegramBot(BOT_TOKEN, {
     polling: true
@@ -30,7 +22,7 @@ const ai = new GoogleGenAI({
     apiKey: GEMINI_API_KEY
 });
 
-console.log("🤖 AIdeev2 запускается...");
+console.log("🤖 AIdeev2 запущен!");
 
 // =========================
 // START
@@ -42,7 +34,7 @@ bot.onText(/^\/start$/, async (msg) => {
     await bot.sendMessage(
         chatId,
         "👋 Привет! Я AIdeev2.\n\n" +
-        "🎬 Я умею генерировать видео.\n\n" +
+        "🎬 Генерация видео через Gemini Omni.\n\n" +
         "Команда:\n" +
         "/omni описание видео\n\n" +
         "Пример:\n" +
@@ -59,7 +51,7 @@ bot.onText(/^\/help$/, async (msg) => {
 
     await bot.sendMessage(
         chatId,
-        "🎬 AIdeev2 — генерация видео\n\n" +
+        "🎬 AIdeev2\n\n" +
         "/omni описание — создать видео\n\n" +
         "Пример:\n" +
         "/omni cat is dancing"
@@ -67,7 +59,7 @@ bot.onText(/^\/help$/, async (msg) => {
 });
 
 // =========================
-// OMNI VIDEO
+// OMNI
 // =========================
 
 bot.onText(/^\/omni(?:\s+([\s\S]+))?$/, async (msg, match) => {
@@ -109,13 +101,11 @@ bot.onText(/^\/omni(?:\s+([\s\S]+))?$/, async (msg, match) => {
 
         if (!interaction.output_video?.data) {
             console.log(
-                "Ответ Gemini:",
+                "Gemini response:",
                 JSON.stringify(interaction, null, 2)
             );
 
-            throw new Error(
-                "Google не вернул видео."
-            );
+            throw new Error("Google не вернул видео.");
         }
 
         const videoBuffer = Buffer.from(
@@ -144,8 +134,7 @@ bot.onText(/^\/omni(?:\s+([\s\S]+))?$/, async (msg, match) => {
         console.error("❌ GEMINI ERROR:", error);
 
         const errorText =
-            error?.message ||
-            String(error);
+            error?.message || String(error);
 
         await bot.sendMessage(
             chatId,
@@ -156,7 +145,7 @@ bot.onText(/^\/omni(?:\s+([\s\S]+))?$/, async (msg, match) => {
 });
 
 // =========================
-// ERRORS
+// TELEGRAM ERRORS
 // =========================
 
 bot.on("polling_error", (error) => {
@@ -165,5 +154,3 @@ bot.on("polling_error", (error) => {
         error.message
     );
 });
-
-console.log("🤖 AIdeev2 запущен!");
